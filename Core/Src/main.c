@@ -74,14 +74,7 @@ uint16_t normalized_data[10];
 uint16_t receivedCrc;
 uint16_t calculatedCrc;
 
-/*!
- * \brief This function is a HAL function provided by the device manufacturer and handles the incoming messages.
- *
- * This function checks if the message is sent to this specific slave by checking the slave id.
- * Then the function executes the requested function by looking at the function id of the message.
- * \param *huart The handler for the UART protocol.
- * \param size The size of the incoming message.
- */
+
 
 void HAL_ADC_ConvCpltCallback(ADC_HandleTypeDef* hadc)
 {
@@ -130,7 +123,6 @@ int main(void)
   HAL_ADC_Start_DMA(&hadc1, (uint32_t*)Adc.Raw, 2);
 
   HAL_UARTEx_ReceiveToIdle_IT(&huart2, rx_buffer, sizeof(rx_buffer));
-  HAL_TIM_Base_Start_IT(&htim3);
 
 
   /* USER CODE END 2 */
@@ -435,7 +427,14 @@ static void MX_GPIO_Init(void)
 
 /* USER CODE BEGIN 4 */
 
-// Function to set the TIM3 timer frequency
+/*!
+ * \brief This function is a HAL function provided by the device manufacturer and handles the incoming messages.
+ *
+ * This function checks if the message is sent to this specific slave by checking the slave id.
+ * Then the function executes the requested function by looking at the function id of the message.
+ * \param *huart The handler for the UART protocol.
+ * \param size The size of the incoming message.
+ */
 
 void HAL_UARTEx_RxEventCallback(UART_HandleTypeDef *huart, uint16_t size){
 	if(rx_buffer[0] == SLAVE_ID){
@@ -467,11 +466,6 @@ void HAL_UARTEx_RxEventCallback(UART_HandleTypeDef *huart, uint16_t size){
 		}
 	}
 	HAL_UARTEx_ReceiveToIdle_IT(&huart2, rx_buffer, 256);
-}
-
-void HAL_TIM_PeriodElapsedCallback(TIM_HandleTypeDef *htim){
-	HAL_GPIO_TogglePin(GPIOB, GPIO_PIN_8);
-	HAL_GPIO_TogglePin(GPIOA, GPIO_PIN_0);
 }
 /* USER CODE END 4 */
 
