@@ -1,5 +1,3 @@
-\mainpage Ana Sayfa
-
 # STM32KBTx Kartları İçin Modbus RTU Slave Yazılımı
 
 Bu yazılım ile Modbus protokolünü kullanarak bilgisayarınızdan STM32 cihazınıza master olarak veriler gönderip, cihaz ile iletişime geçebilirsiniz. Modbus protokolünde tanımlı standart fonksiyonlara ek olarak özel tanımlanmış fonksiyonlar ile ek işlevler yapabilirsiniz.
