@@ -73,9 +73,6 @@ uint8_t tx_buffer[256];
 uint16_t normalized_data[10];
 uint16_t receivedCrc;
 uint16_t calculatedCrc;
-uint64_t desiredTimesSystemCore;
-uint32_t arr;
-double timeS;
 
 /*!
  * \brief This function is a HAL function provided by the device manufacturer and handles the incoming messages.

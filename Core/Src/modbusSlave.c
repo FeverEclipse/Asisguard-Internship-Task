@@ -18,9 +18,6 @@ extern UART_HandleTypeDef huart2;
 extern uint16_t calculatedCrc;
 extern uint16_t receivedCrc;
 extern TIM_HandleTypeDef htim3;
-extern uint64_t desiredTimesSystemCore;
-extern uint32_t arr;
-extern double timeS;
 
 /*!
  *  \brief This function takes in the data buffer and adds the CRC bytes to it. And then transmits the data to the master device.
