@@ -1,4 +1,4 @@
-# STM32KBTx Kartları İçin Timer Kullanarak ve Periyodunu Değiştirerek GPIO Sinyali Gönderme Yazılımı
+# STM32G431KBTx Kartları İçin Timer Kullanarak ve Periyodunu Değiştirerek GPIO Sinyali Gönderme Yazılımı
 
 Bu yazılım ile Modbus protokolünü kullanarak bilgisayarınızdan STM32 cihazınıza master olarak veriler gönderip, cihazın Timerının(TIM3) periyodunu değiştirebilirsiniz. Cihaz LED ışığını belirlenen periyotta yanıp söndürecek ve yine aynı periyotta PA0 GPIO çıkışına yüksek ve düşük sinyal gönderecektir.
 
