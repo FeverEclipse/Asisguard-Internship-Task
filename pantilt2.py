@@ -1,4 +1,4 @@
-import fcntl
+import msvcrt
 import threading
 import time
 import numpy as np
@@ -16,10 +16,8 @@ def fileCheck():
     global amplitude
     while True:
         with open("config.txt", "r") as f:
-            fcntl.flock(f, fcntl.LOCK_EX)
             new_frequency = float(f.readline().strip())
             new_amplitude = float(f.readline().strip())
-            fcntl.flock(f, fcntl.LOCK_UN)
             if frequency != new_frequency or amplitude != new_amplitude:
                 frequency = new_frequency
                 amplitude = new_amplitude
