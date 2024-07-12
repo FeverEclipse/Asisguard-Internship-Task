@@ -4,6 +4,7 @@ import time
 import numpy as np
 import tkinter
 import threading
+from filelock import Timeout, FileLock
 
 CRC16_XMODEM_POLY = 0x1021
 CRC16_XMODEM_INITIAL_VALUE = 0x0000
@@ -61,12 +62,11 @@ def calculateCRC16(data, length):
     return crc
 
 def PanTilt_Go_TO_Home():
-
-    with open(file, "w") as f:
-            msvcrt.locking(f.fileno(), msvcrt.LK_LOCK,1)
-            f.write("0\n0")
-            msvcrt.locking(f.fileno(), msvcrt.LK_UNLCK,1)
-            f.close()
+    lock = FileLock("config.txt.lock")
+    with lock:
+        with open(file, "w") as f:
+                f.write("0\n0")
+                f.close()
     bPanTilt_Transmitter_Buffer = bytearray(50)
 
     bPanTilt_Transmitter_Buffer[0] = PANTILT_SYNC_BYTE
@@ -115,11 +115,11 @@ def startSending():
     global amplitude
     frequency = int(frequencyEntry.get())
     amplitude = int(amplitudeEntry.get())
-    with open(file, "w") as f:
-        msvcrt.locking(f.fileno(), msvcrt.LK_LOCK,1)
-        f.write(str(frequency) + "\n" + str(amplitude))
-        msvcrt.locking(f.fileno(), msvcrt.LK_UNLCK,1)
-        f.close()
+    lock = FileLock("config.txt.lock")
+    with lock:
+        with open(file, "w") as f:
+                f.write(str(frequency) + "\n" + str(amplitude))
+                f.close()
     stop_flag.clear()
     start_time = time.time()
     task_thread = threading.Thread(target=sendData)

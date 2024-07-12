@@ -4,6 +4,7 @@ import time
 import numpy as np
 import matplotlib.pyplot as plt
 import matplotlib.animation as animation
+from filelock import Timeout, FileLock
 
 # Parameters
 frequency = 20  # Frequency in Hz
@@ -15,12 +16,14 @@ def fileCheck():
     global frequency
     global amplitude
     while True:
-        with open("config.txt", "r") as f:
-            new_frequency = float(f.readline().strip())
-            new_amplitude = float(f.readline().strip())
-            if frequency != new_frequency or amplitude != new_amplitude:
-                frequency = new_frequency
-                amplitude = new_amplitude
+        lock = FileLock("config.txt.lock")
+        with lock:
+            with open("config.txt", "w") as f:
+                new_frequency = float(f.readline().strip())
+                new_amplitude = float(f.readline().strip())
+                if frequency != new_frequency or amplitude != new_amplitude:
+                    frequency = new_frequency
+                    amplitude = new_amplitude
         time.sleep(0.01)
 
 # Initialize figure and axis
