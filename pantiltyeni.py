@@ -53,14 +53,22 @@ file = "config.txt"
 def connectSerial():
     global ser
     global connectionStatusLabel
-    ser = serial.Serial(selectedPort.get(),
+    if ser:
+        ser.close()
+        ser = None
+        connectionStatusLabel.config(text="Not Connected", background="#f00")
+        portEntry.config(state=tkinter.ACTIVE)
+        connectButton.config(text="Connect")
+    else:
+        ser = serial.Serial(selectedPort.get(),
             baudrate=57600,
             write_timeout=100,
             bytesize=serial.EIGHTBITS,
             parity=serial.PARITY_NONE,
             stopbits=serial.STOPBITS_ONE)
-    connectionStatusLabel.config(text="Connected", background="#0f0")
-    portEntry.config(state=tkinter.DISABLED)
+        connectionStatusLabel.config(text="Connected", background="#0f0")
+        portEntry.config(state=tkinter.DISABLED)
+        connectButton.config(text="Disconnect")
 
 global stop_flag
 stop_flag = threading.Event()
