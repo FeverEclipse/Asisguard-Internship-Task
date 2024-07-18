@@ -3,6 +3,7 @@ import serial
 import time
 import os
 import numpy as np
+import serial.tools.list_ports
 import tkinter
 import threading
 
@@ -17,12 +18,18 @@ GO_TO_START = 0x1A
 
 TILT_AXIS = 20
 
+availablePorts = serial.tools.list_ports.comports()
+portsList = []
+for port in availablePorts:
+    portsList.append(port.name)
+
 
 frequency = 1
 amplitude = 30000
 start_time = time.time()
 bPanTilt_Transmitter_Buffer = bytearray(100)
 gui = tkinter.Tk()
+selectedPort = tkinter.StringVar(value=availablePorts[0].name)
 gui.title("Pan/Tilt UI")
 frequencyEntry = tkinter.Entry(gui, width=5)
 frequencyEntry.insert(0, "0")
@@ -31,11 +38,11 @@ amplitudeEntry.insert(0, "0")
 frequencyLabel = tkinter.Label(gui, text='Enter frequency: ')
 frequencyLabel.grid(row=1,column=1, sticky="W", padx=15, pady=15)
 portLabel = tkinter.Label(gui, text="Enter Port: ")
-connectionStatusLabel = tkinter.Label(gui, text="Not Connected")
-connectionStatusLabel.grid(row=3, column=3)
-portLabel.grid(row=3, column=1, padx= 5, pady= 5)
-portEntry = tkinter.Entry(gui, width= 7)
-portEntry.grid(row=3, column=2, padx=5, pady=5)
+connectionStatusLabel = tkinter.Label(gui, text="Not Connected", background="#f00")
+connectionStatusLabel.grid(row=0, column=3)
+portLabel.grid(row=0, column=1, padx= 5, pady= 5)
+portEntry = tkinter.OptionMenu(gui, selectedPort, *portsList)
+portEntry.grid(row=0, column=2, padx=5, pady=5)
 frequencyEntry.grid(row=1, column=2, padx=5, pady=5)
 amplitudeLabel = tkinter.Label(gui, text='Enter amplitude: ')
 amplitudeLabel.grid(row=2,column=1, sticky="W", padx=15, pady=15)
@@ -46,13 +53,14 @@ file = "config.txt"
 def connectSerial():
     global ser
     global connectionStatusLabel
-    ser = serial.Serial(portEntry.get(),
+    ser = serial.Serial(selectedPort.get(),
             baudrate=57600,
             write_timeout=100,
             bytesize=serial.EIGHTBITS,
             parity=serial.PARITY_NONE,
             stopbits=serial.STOPBITS_ONE)
-    connectionStatusLabel.config(text="Connected")
+    connectionStatusLabel.config(text="Connected", background="#0f0")
+    portEntry.config(state=tkinter.DISABLED)
 
 global stop_flag
 stop_flag = threading.Event()
@@ -146,9 +154,9 @@ def stopSending():
 startButton = tkinter.Button(gui, text="Start Sending", command=startSending)
 startButton.grid(row=4, column=1, pady=10, sticky="W")
 stopButton = tkinter.Button(gui, text="Stop Sending", command=stopSending)
-stopButton.grid(row=4, column=3, pady=10, sticky="W")
-homeButton = tkinter.Button(gui, text="Go to Home", command=PanTilt_Go_TO_Home)
-homeButton.grid(row=5, column=2, pady=10, sticky="W")
+stopButton.grid(row=4, column=2, pady=10, sticky="W")
+homeButton = tkinter.Button(gui, text="Go to Home", command=PanTilt_Go_TO_Home, bg="#f00", fg="#fff")
+homeButton.grid(row=4, column=3, pady=10, sticky="W")
 connectButton = tkinter.Button(gui, text="Connect to device", command=connectSerial)
-connectButton.grid(row=3, column=4)
+connectButton.grid(row=0, column=4)
 gui.mainloop()
