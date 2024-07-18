@@ -1,10 +1,10 @@
 import msvcrt
 import serial
 import time
+import os
 import numpy as np
 import tkinter
 import threading
-from filelock import Timeout, FileLock
 
 CRC16_XMODEM_POLY = 0x1021
 CRC16_XMODEM_INITIAL_VALUE = 0x0000
@@ -30,18 +30,29 @@ amplitudeEntry = tkinter.Entry(gui, width=5)
 amplitudeEntry.insert(0, "0")
 frequencyLabel = tkinter.Label(gui, text='Enter frequency: ')
 frequencyLabel.grid(row=1,column=1, sticky="W", padx=15, pady=15)
+portLabel = tkinter.Label(gui, text="Enter Port: ")
+connectionStatusLabel = tkinter.Label(gui, text="Not Connected")
+connectionStatusLabel.grid(row=3, column=3)
+portLabel.grid(row=3, column=1, padx= 5, pady= 5)
+portEntry = tkinter.Entry(gui, width= 7)
+portEntry.grid(row=3, column=2, padx=5, pady=5)
 frequencyEntry.grid(row=1, column=2, padx=5, pady=5)
 amplitudeLabel = tkinter.Label(gui, text='Enter amplitude: ')
 amplitudeLabel.grid(row=2,column=1, sticky="W", padx=15, pady=15)
 amplitudeEntry.grid(row=2, column=2, padx=5, pady=5)
+ser= None
 file = "config.txt"
 
-ser = serial.Serial("COM15",
+def connectSerial():
+    global ser
+    global connectionStatusLabel
+    ser = serial.Serial(portEntry.get(),
             baudrate=57600,
             write_timeout=100,
             bytesize=serial.EIGHTBITS,
             parity=serial.PARITY_NONE,
             stopbits=serial.STOPBITS_ONE)
+    connectionStatusLabel.config(text="Connected")
 
 global stop_flag
 stop_flag = threading.Event()
@@ -62,11 +73,12 @@ def calculateCRC16(data, length):
     return crc
 
 def PanTilt_Go_TO_Home():
-    lock = FileLock("config.txt.lock")
-    with lock:
-        with open(file, "w") as f:
-                f.write("0\n0")
-                f.close()
+
+    with open(file, "w") as f:
+            msvcrt.locking(f.fileno(), msvcrt.LK_LOCK,1)
+            f.write("0\n0")
+            msvcrt.locking(f.fileno(), msvcrt.LK_UNLCK,1)
+            f.close()
     bPanTilt_Transmitter_Buffer = bytearray(50)
 
     bPanTilt_Transmitter_Buffer[0] = PANTILT_SYNC_BYTE
@@ -115,11 +127,11 @@ def startSending():
     global amplitude
     frequency = int(frequencyEntry.get())
     amplitude = int(amplitudeEntry.get())
-    lock = FileLock("config.txt.lock")
-    with lock:
-        with open(file, "w") as f:
-                f.write(str(frequency) + "\n" + str(amplitude))
-                f.close()
+    with open(file, "w") as f:
+        msvcrt.locking(f.fileno(), msvcrt.LK_LOCK,os.path.getsize(f.name))
+        f.write(str(frequency) + "\n" + str(amplitude))
+        msvcrt.locking(f.fileno(), msvcrt.LK_UNLCK,os.path.getsize(f.name))
+        f.close()
     stop_flag.clear()
     start_time = time.time()
     task_thread = threading.Thread(target=sendData)
@@ -132,9 +144,11 @@ def stopSending():
     task_thread.join()
     print("stopped")
 startButton = tkinter.Button(gui, text="Start Sending", command=startSending)
-startButton.grid(row=3, column=1, pady=10, sticky="W")
+startButton.grid(row=4, column=1, pady=10, sticky="W")
 stopButton = tkinter.Button(gui, text="Stop Sending", command=stopSending)
-stopButton.grid(row=3, column=3, pady=10, sticky="W")
+stopButton.grid(row=4, column=3, pady=10, sticky="W")
 homeButton = tkinter.Button(gui, text="Go to Home", command=PanTilt_Go_TO_Home)
-homeButton.grid(row=4, column=2, pady=10, sticky="W")
+homeButton.grid(row=5, column=2, pady=10, sticky="W")
+connectButton = tkinter.Button(gui, text="Connect to device", command=connectSerial)
+connectButton.grid(row=3, column=4)
 gui.mainloop()
