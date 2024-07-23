@@ -2,7 +2,7 @@ import requests
 import socket
 import select
 
-UDP_IP = "10.10.10.54"
+UDP_IP = "10.230.1.64"
 UDP_LATLON_PORT = 11453
 UDP_ELE_PORT = 1453
 

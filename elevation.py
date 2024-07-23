@@ -3,7 +3,7 @@ import tkinter
 import threading
 import socket
 
-UDP_IP = "10.10.10.54"
+UDP_IP = "10.230.1.64"
 UDP_LATLON_PORT = 11453
 UDP_ELE_PORT = 1453
 
@@ -30,9 +30,10 @@ def startRetrieve():
 def sendLatLon():
     global stop_flag, latitudeEntry, longitudeEntry
     sock = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
+    longitude = longitudeEntry.get()
     while not stop_flag.is_set():
         latitude = latitudeEntry.get()
-        longitude = longitudeEntry.get()
+        longitude = str(float(longitude) + 0.1)
         message = f"{latitude},{longitude}".encode("utf-8")
         sock.sendto(message, (UDP_IP, UDP_LATLON_PORT))
         time.sleep(1)
