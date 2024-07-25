@@ -1,14 +1,15 @@
 import struct
-import requests
 import socket
 import select
+import srtm
 
-UDP_IP = "10.10.10.54"
+UDP_IP = "10.10.10.54" # "10.90.3.54"
 UDP_LATLON_PORT = 11453
 UDP_ELE_PORT = 1453
 
 lat = 0
 lon = 0
+
 
 def create_crc32c(crcdata, length):
     crc32table = [
@@ -73,13 +74,16 @@ def create_crc32c(crcdata, length):
 # print(hex(create_crc32c(crcdata, length)))
 
 
-def elevation():
-    global lat
-    global lon
-    url = f"https://api.open-elevation.com/api/v1/lookup?locations={lat},{lon}"
-    r = requests.get(url=url)
-    data = r.json()
-    return data['results'][0]['elevation']
+def elevation(lat, lon):
+    elevation_data = srtm.get_data(local_cache_dir='/Users/eyupmenevse/Documents/Elevation Cache') # Change this to whatever directory you want to have your cache files in.
+    elevation = elevation_data.get_elevation(lat, lon)
+    if elevation is None:
+        print("The lat is: ", lat)
+        print("The lon is: ", lon)
+        print("An error occurred.")
+        return -1.0
+    else:
+        return elevation
 
 # Create and bind the socket once
 latlon_socket = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
@@ -102,12 +106,24 @@ while True:
             msg[3] == 0x33):
             lat = struct.unpack('<f', bytes(msg[5:9]))[0]
             lon = struct.unpack('<f', bytes(msg[9:13]))[0]
-            receivedCrc = msg[13:17]
-            calculatedCrc = create_crc32c(msg[4:13], len(msg[4:13]))
+            planelat = struct.unpack('<f', bytes(msg[13:17]))[0]
+            planelon = struct.unpack('<f', bytes(msg[17:21]))[0]
+            receivedCrc = msg[21:25]
+            calculatedCrc = create_crc32c(msg[4:21], len(msg[4:21]))
             resultCrc = struct.pack('>I', calculatedCrc)
         if receivedCrc == resultCrc:
-            ele = elevation()
-            elevation_socket.sendto(str(ele).encode("utf-8"), (UDP_IP, UDP_ELE_PORT))
+            ele = elevation(lat,lon)
+            planeEle = elevation(planelat, planelon)
+            send_ele = bytearray(17)
+            send_ele[0] = 0xAA
+            send_ele[1] = 0x55
+            send_ele[2] = 0xCC
+            send_ele[3] = 0x33
+            send_ele[4] = 0x80
+            send_ele[5:9] = struct.pack('f', ele)
+            send_ele[9:13] = struct.pack('f', planeEle)
+            send_ele[13:17] = struct.pack('>I', create_crc32c(send_ele[4:13], len(send_ele[4:13])))
+            elevation_socket.sendto(send_ele, (UDP_IP, UDP_ELE_PORT))
         else:
             print(receivedCrc)
             print(resultCrc)

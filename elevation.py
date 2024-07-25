@@ -4,12 +4,17 @@ import tkinter
 import threading
 import socket
 
-UDP_IP = "10.10.10.54"
+UDP_IP = "10.10.10.54" # "10.90.3.54"
 UDP_LATLON_PORT = 11453
 UDP_ELE_PORT = 1453
 
 latitude = "0"
 longitude = "0"
+planelatitude = "0"
+planelongitude = "0"
+
+ele = 0.0
+planeEle = 0.0
 
 stop_flag = threading.Event()
 stop_receive = threading.Event()
@@ -82,8 +87,6 @@ def create_crc32c(crcdata, length):
 
 def startRetrieve():
     global stop_flag, task_thread, receive_thread, latitudeEntry, longitudeEntry
-    latitude = latitudeEntry.get()
-    longitude = longitudeEntry.get()
     stop_flag.clear()
     task_thread = threading.Thread(target=sendLatLon)
     receive_thread = threading.Thread(target=receiveElevation)
@@ -93,13 +96,17 @@ def startRetrieve():
 def sendLatLon():
     global stop_flag, latitudeEntry, longitudeEntry
     sock = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
-    longitude = longitudeEntry.get()
+    longitude = float(longitudeEntry.get()) if longitudeEntry.get() != "" else 0.0
     while not stop_flag.is_set():
-        latitude = float(latitudeEntry.get())
-        longitude = float(longitude) + 0.1
+        latitude = float(latitudeEntry.get()) if latitudeEntry.get() != "" else 0.0
+        longitude = longitude + 0.1
+        planelatitude = float(planeLatitudeEntry.get()) if planeLatitudeEntry.get() != "" else 0.0
+        planelongitude = float(planeLongitudeEntry.get()) if planeLongitudeEntry.get() != "" else 0.0
         latitude_FOV_byte = struct.pack('f', latitude)
         longitude_FOV_byte = struct.pack('f', longitude)
-        send_FOV = bytearray(17)
+        planelatitude_byte = struct.pack('f', planelatitude)
+        planelongitude_byte = struct.pack('f', planelongitude)
+        send_FOV = bytearray(25)
         send_FOV[0] = 0xAA
         send_FOV[1] = 0x55
         send_FOV[2] = 0xCC
@@ -107,28 +114,45 @@ def sendLatLon():
         send_FOV[4] = 0x80
         send_FOV[5:9] = latitude_FOV_byte
         send_FOV[9:13] = longitude_FOV_byte
-
-        temp_crc_data = send_FOV[4:13]
+        send_FOV[13:17] = planelatitude_byte
+        send_FOV[17:21] = planelongitude_byte
+        temp_crc_data = send_FOV[4:21]
         Crc_val = create_crc32c(temp_crc_data, len(temp_crc_data))
         CRC_Bytes = struct.pack('>I', Crc_val)
-        send_FOV[13:17] = CRC_Bytes
+        send_FOV[21:25] = CRC_Bytes
         sock.sendto(send_FOV, (UDP_IP, UDP_LATLON_PORT))
-        time.sleep(1)
+        time.sleep(0.5)
 
 def receiveElevation():
     global eleLabel
+    global ele
+    global planeEle
     s = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
     s.bind((UDP_IP, UDP_ELE_PORT))
     while not stop_flag.is_set():
         msg, _ = s.recvfrom(1024)
-        print(msg)
-        eleLabel.config(text="The requested elevation is: " + msg.decode("utf-8"))
+        received_crc = msg[13:17]
+        calculated_crc = struct.pack('>I', create_crc32c(msg[4:13], len(msg[4:13])))
+        if (msg[0] == 0xAA and
+            msg[1] == 0x55 and
+            msg[2] == 0xCC and
+            msg[3] == 0x33 and
+            received_crc == calculated_crc):
+            ele = struct.unpack('<f', bytes(msg[5:9]))[0]
+            planeEle = struct.unpack('<f', bytes(msg[9:13]))[0]
+        eleLabel.config(text="The elevation of the target is: " + str(ele) + "\n The elevation of the plane is: " + str(planeEle))
 
-latitudeLabel = tkinter.Label(gui, text='Enter latitude: ')
+latitudeLabel = tkinter.Label(gui, text='Enter target latitude: ')
 latitudeLabel.grid(row=0,column=0, sticky="W", padx=15, pady=15)
 
-longitudeLabel = tkinter.Label(gui, text='Enter longitude: ')
+longitudeLabel = tkinter.Label(gui, text='Enter target longitude: ')
 longitudeLabel.grid(row=1, column=0, sticky="W", padx=15, pady=15)
+
+planeLatitudeLabel = tkinter.Label(gui, text='Enter plane latitude: ')
+planeLatitudeLabel.grid(row=2, column=0, sticky="W", padx=15, pady=15)
+
+planeLongitudeLabel = tkinter.Label(gui, text='Enter plane longitude: ')
+planeLongitudeLabel.grid(row=3, column=0, sticky="W", padx=15, pady=15)
 
 latitudeEntry = tkinter.Entry(gui, width=15)
 latitudeEntry.grid(row=0, column=1, padx=15, pady=15)
@@ -136,8 +160,14 @@ latitudeEntry.grid(row=0, column=1, padx=15, pady=15)
 longitudeEntry = tkinter.Entry(gui, width=15)
 longitudeEntry.grid(row=1, column=1, padx=15, pady=15)
 
+planeLatitudeEntry = tkinter.Entry(gui, width=15)
+planeLatitudeEntry.grid(row=2, column=1, padx=15, pady=15)
+
+planeLongitudeEntry = tkinter.Entry(gui, width=15)
+planeLongitudeEntry.grid(row=3, column=1, padx=15, pady=15)
+
 button = tkinter.Button(gui, text="Check elevation", command=startRetrieve)
-button.grid(row=2, column=1, padx=15, pady=15)
+button.grid(row=4, column=1, padx=15, pady=15)
 
 eleLabel = tkinter.Label(gui, text="")
 eleLabel.grid()
