@@ -26,9 +26,12 @@ while ser.inWaiting() > 0:
 received2 = b""
 count = 0
 if ReceivedData == b"\x90\x42\xFF":
+    while ser.in_waiting() == 0:
+        time.sleep(0.05)
+        count += 1
     while ser.in_waiting() > 0:
         received2 += ser.read(1)
     if received2 == b"\x90\x52\xFF":
-        print("elapsed: " , time.time() - curTime - 0.05)
+        print("elapsed: " , time.time() - curTime - (0.05 * count) - 0.05)
 else:
     print(received2.hex())
